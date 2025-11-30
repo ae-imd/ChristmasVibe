@@ -26,7 +26,18 @@ const char *IMD::tree(size_t height, char symbol)
     }
 
     size_t width(2 * height - 1);
-    const size_t amount(height * width + (height - 1) + 1);
+    size_t amount(0);
+
+    for (size_t lev(0); lev < height; ++lev)
+    {
+        size_t stars_amount(2 * lev + 1);
+        size_t spaces_amount((width - stars_amount) / 2);
+        amount += stars_amount + spaces_amount;
+        if (lev < height - 1)
+            ++amount; // \n
+    }
+    ++amount; // \0
+
     char *res = new char[amount];
     size_t ind(0);
 
