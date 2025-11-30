@@ -57,6 +57,10 @@
         "xmemory": "cpp",
         "xtr1common": "cpp",
         "iomanip": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "random": "cpp",
+        "algorithm": "cpp",
+        "optional": "cpp",
+        "vector": "cpp"
     }
 }

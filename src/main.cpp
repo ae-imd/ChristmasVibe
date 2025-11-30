@@ -3,7 +3,11 @@
 
 int main()
 {
-    std::cout << IMD::christmas_tree(10) << std::endl;
+    IMD::enable_color();
+    IMD::println(IMD::christmas_tree(10));
+
+    int num;
+    std::cin >> num;
 
     return 0;
 }

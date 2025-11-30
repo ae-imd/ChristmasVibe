@@ -11,7 +11,7 @@
                 "${workspaceFolder}/src/main.cpp",
                 "${workspaceFolder}/src/christmas.cpp",
                 "-I", "${workspaceFolder}/include",
-                "-o", "${workspaceFolder}/main.exe"
+                "-o", "${workspaceFolder}/src/main.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
