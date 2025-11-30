@@ -4,7 +4,7 @@
 int main()
 {
     IMD::enable_color();
-    IMD::println(IMD::christmas_tree(10));
+    IMD::println_color_tree(IMD::christmas_tree(10));
 
     int num;
     std::cin >> num;
