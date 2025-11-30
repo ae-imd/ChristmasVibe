@@ -3,9 +3,7 @@
 #include <string>
 #include <sstream>
 #include <thread>
-#include <cmath>
 #include <chrono>
-
 #include <algorithm>
 
 #ifdef _WIN32
@@ -18,10 +16,17 @@ namespace IMD
     std::mt19937 gen(rd());
 }
 
-const char *IMD::christmas_tree(size_t height)
+const char *IMD::tree(size_t height, char symbol)
 {
+    if (height == 0)
+    {
+        char *empty = new char[1];
+        empty[0] = '\0';
+        return empty;
+    }
+
     size_t width(2 * height - 1);
-    const size_t amount(height * height + (height - 1) + 1);
+    const size_t amount(height * width + (height - 1) + 1);
     char *res = new char[amount];
     size_t ind(0);
 
@@ -33,12 +38,56 @@ const char *IMD::christmas_tree(size_t height)
         for (size_t i(0); i < spaces_amount; ++i)
             res[ind++] = ' ';
         for (size_t i(0); i < stars_amount; ++i)
-            res[ind++] = '*';
+            res[ind++] = symbol;
 
         if (lev < height - 1)
             res[ind++] = '\n';
     }
     res[ind] = '\0';
+    return res;
+}
+const char *IMD::heart(size_t size, char symbol)
+{
+    if (size <= 1)
+    {
+        char *empty = new char[1];
+        empty[0] = '\0';
+        return empty;
+    }
+
+    std::stringstream ss;
+    double tmp = static_cast<double>(size);
+
+    for (double x(0); x < tmp; ++x)
+    {
+        for (double y(0); y <= 4 * tmp; ++y)
+        {
+            double dist1 = sqrt(pow(x - tmp, 2) + pow(y - tmp, 2));
+            double dist2 = sqrt(pow(x - tmp, 2) + pow(y - 3 * tmp, 2));
+
+            if (dist1 < tmp + 0.5 || dist2 < tmp + 0.5)
+                ss << symbol;
+            else
+                ss << " ";
+        }
+        ss << std::endl;
+    }
+
+    for (double x(1); x < 2 * tmp; ++x)
+    {
+        for (double y(0); y < x; ++y)
+            ss << " ";
+
+        for (double y(0); y < 4 * tmp + 1 - 2 * x; ++y)
+            ss << symbol;
+
+        ss << std::endl;
+    }
+
+    std::string line = ss.str();
+    char *res = new char[line.length() + 1];
+    strcpy(res, line.c_str());
+
     return res;
 }
 
@@ -48,22 +97,22 @@ std::pair<const char *, const char *> IMD::get_random_color()
     return COLORS[dist(gen)];
 }
 
-void IMD::clrprint(const char *tree, std::ostream &os)
+void IMD::clrprint(const char *tree, char symbol, std::ostream &os)
 {
     if (tree == nullptr || tree[0] == '\0')
         return;
 
     for (size_t i(0); tree[i] != '\0'; ++i)
     {
-        if (tree[i] == '*')
-            os << get_random_color().second << "*" << COLORS[0].second;
+        if (tree[i] == symbol)
+            os << get_random_color().second << symbol << COLORS[0].second;
         else
             os << tree[i];
     }
 }
-void IMD::clrprintln(const char *tree, std::ostream &os)
+void IMD::clrprintln(const char *tree, char symbol, std::ostream &os)
 {
-    clrprint(tree, os);
+    clrprint(tree, symbol, os);
     os << std::endl;
 }
 
@@ -130,7 +179,7 @@ void IMD::struct_snow_animation(size_t width, size_t height, double spawn_prob, 
 
     while (std::chrono::steady_clock::now() < end_time)
     {
-        os << CLEAR;
+        os << "\033[H";
 
         size_t field(width * spawn_prob);
         while (field != 0 && space.size() < max_amount)
@@ -206,7 +255,7 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
 
     while (std::chrono::steady_clock::now() < end_time)
     {
-        os << CLEAR;
+        os << "\033[H";
 
         size_t field(width * spawn_prob);
         while (field != 0 && amount < max_amount)
@@ -236,7 +285,10 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
                         mrx[y][x] = {' ', ""};
                     }
                     else if (y + 1 >= height)
+                    {
                         mrx[y][x] = {' ', ""};
+                        --amount;
+                    }
                 }
             }
         }
@@ -265,47 +317,5 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
         delete[] mrx[i];
     delete[] mrx;
 
-    os << CLEAR;
-}
-
-const char *IMD::heart(size_t size)
-{
-    if (size <= 1)
-        return NULL;
-
-    std::stringstream ss;
-    double tmp = static_cast<double>(size);
-
-    for (double x(0); x < tmp; ++x)
-    {
-        for (double y(0); y <= 4 * tmp; ++y)
-        {
-            double dist1 = sqrt(pow(x - tmp, 2) + pow(y - tmp, 2));
-            double dist2 = sqrt(pow(x - tmp, 2) + pow(y - 3 * tmp, 2));
-
-            if (dist1 < tmp + 0.5 || dist2 < tmp + 0.5)
-                ss << "*";
-            else
-                ss << " ";
-        }
-        ss << std::endl;
-    }
-
-    // Нижняя часть сердца (треугольник)
-    for (double x(1); x < 2 * tmp; ++x)
-    {
-        for (double y(0); y < x; ++y)
-            ss << " ";
-
-        for (double y(0); y < 4 * tmp + 1 - 2 * x; ++y)
-            ss << "*";
-
-        ss << std::endl;
-    }
-
-    std::string result_str = ss.str();
-    char *result = new char[result_str.length() + 1];
-    strcpy(result, result_str.c_str());
-
-    return result;
+    os << "\033[H";
 }

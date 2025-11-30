@@ -6,15 +6,12 @@
 #include <iostream>
 #include <random>
 
-#define CLEAR "\033[2J\033[1;1H"
-
 namespace IMD
 {
-    using color = std::pair<const char *, const char *>;    // name, code
-    using lyric = std::tuple<const char *, size_t, size_t>; // line, delay between chars, general delay
+    using color = std::pair<const char *, const char *>; // name, code
 
     constexpr color COLORS[] = {
-        {"RESET", "\033[0m"},
+        {"RESET", "\033[0m"}, // 0-index is ALWAYS RESET
         {"RED", "\033[31m"},
         {"GREEN", "\033[32m"},
         {"YELLOW", "\033[33m"},
@@ -31,20 +28,20 @@ namespace IMD
 
     color get_random_color();
 
-    const char *christmas_tree(size_t height);
+    const char *tree(size_t height, char symbol = '*');
+    const char *heart(size_t size, char symbol = '*');
+
     void struct_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os = std::cout);
     void matrix_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os = std::cout);
 
-    void clrprint(const char *tree, std::ostream &os = std::cout);
-    void clrprintln(const char *tree, std::ostream &os = std::cout);
+    void clrprint(const char *tree, char symbol = '*', std::ostream &os = std::cout);
+    void clrprintln(const char *tree, char symbol = '*', std::ostream &os = std::cout);
 
     void delprint(const char *line, size_t delay_ms, std::ostream &os = std::cout);
     void delprintln(const char *line, size_t delay_ms, std::ostream &os = std::cout);
 
     void setup_terminal();
     void clear_terminal();
-
-    const char *heart(size_t size);
 }
 
 #endif
