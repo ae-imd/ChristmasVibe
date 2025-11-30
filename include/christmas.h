@@ -29,12 +29,16 @@ namespace IMD
     std::pair<const char *, const char *> get_random_color();
 
     const char *christmas_tree(size_t height);
+    void snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os = std::cout);
 
     void print_color_tree(const char *tree, std::ostream &os = std::cout);
     void println_color_tree(const char *tree, std::ostream &os = std::cout);
 
-    void enable_color();
+    void delprint(const char *line, size_t delay_ms, std::ostream &os = std::cout);
+    void delprintln(const char *line, size_t delay_ms, std::ostream &os = std::cout);
 
+    void enable_color();
+    void clear_screen();
 }
 
 #endif
