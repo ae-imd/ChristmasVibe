@@ -42,7 +42,7 @@ const char *IMD::christmas_tree(size_t height)
 
 std::pair<const char *, const char *> IMD::get_random_color()
 {
-    std::uniform_int_distribution<> dist(0, std::size(COLORS) - 1);
+    std::uniform_int_distribution<> dist(1, std::size(COLORS) - 1);
     return COLORS[dist(gen)];
 }
 
@@ -54,7 +54,7 @@ void IMD::print_color_tree(const char *tree, std::ostream &os)
     for (size_t i(0); tree[i] != '\0'; ++i)
     {
         if (tree[i] == '*')
-            os << get_random_color().second << "*" << RESET;
+            os << get_random_color().second << "*" << COLORS[0].second;
         else
             os << tree[i];
     }
@@ -81,7 +81,7 @@ void IMD::enable_color()
 #endif
 }
 
-void IMD::clear_screen()
+void IMD::clear_terminal()
 {
 #ifdef _WIN32
     system("cls");
@@ -108,19 +108,17 @@ void IMD::delprintln(const char *line, size_t delay_ms, std::ostream &os)
     os << std::endl;
 }
 
-void IMD::snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os)
+void IMD::struct_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os)
 {
     constexpr char SNOW_SYMBOLS[] = {'.', '*', '+'};
     struct snowflake
     {
         size_t x, y;
-        int speed;
         char symbol;
         const char *color;
     };
 
     std::uniform_int_distribution<> col_dist(0, width - 1);
-    std::uniform_int_distribution<> speed_dist(1, 2);
     std::uniform_real_distribution<> prob_dist(0.0, 1.0);
     std::uniform_int_distribution<> symbol_dist(0, std::size(SNOW_SYMBOLS) - 1);
 
@@ -130,36 +128,35 @@ void IMD::snow_animation(size_t width, size_t height, double spawn_prob, size_t 
 
     while (std::chrono::steady_clock::now() < end_time)
     {
-        os << "\033[2J\033[1;1H";
+        os << CLEAR;
 
-        size_t amount(width * spawn_prob);
-        while (amount != 0 && space.size() < max_amount)
+        size_t field(width * spawn_prob);
+        while (field != 0 && space.size() < max_amount)
         {
             size_t col = col_dist(gen);
             if (prob_dist(gen) < spawn_prob)
             {
-                bool top_occupied = false;
+                bool flag(false);
                 for (const auto &sf : space)
                 {
                     if (sf.x == col && sf.y == 0)
                     {
-                        top_occupied = true;
+                        flag = true;
                         break;
                     }
                 }
 
-                if (!top_occupied)
+                if (!flag)
                 {
                     snowflake sf;
                     sf.x = col;
                     sf.y = 0;
-                    sf.speed = speed_dist(gen);
                     sf.symbol = SNOW_SYMBOLS[symbol_dist(gen)];
                     sf.color = get_random_color().second;
                     space.push_back(sf);
                 }
             }
-            --amount;
+            --field;
         }
 
         for (auto it = space.begin(); it != space.end();)
@@ -167,13 +164,13 @@ void IMD::snow_animation(size_t width, size_t height, double spawn_prob, size_t 
             os << "\033[" << it->y << ";" << it->x << "H";
             os << " ";
 
-            it->y += it->speed;
+            it->y += 1;
             if (it->y > height)
                 it = space.erase(it);
             else
             {
                 os << "\033[" << it->y << ";" << it->x << "H";
-                os << it->color << it->symbol << RESET;
+                os << it->color << it->symbol << COLORS[0].second;
                 ++it;
             }
         }
@@ -184,4 +181,87 @@ void IMD::snow_animation(size_t width, size_t height, double spawn_prob, size_t 
         os.flush();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+}
+void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os)
+{
+    constexpr char SNOW_SYMBOLS[] = {'.', '*', '+'};
+    using cell = std::pair<char, const char *>;
+
+    cell **mrx = new cell *[height];
+    for (size_t i(0); i < height; ++i)
+    {
+        mrx[i] = new cell[width];
+        for (size_t j(0); j < width; ++j)
+            mrx[i][j] = {' ', ""};
+    }
+
+    std::uniform_int_distribution<> col_dist(0, width - 1);
+    std::uniform_real_distribution<> prob_dist(0.0, 1.0);
+    std::uniform_int_distribution<> symbol_dist(0, std::size(SNOW_SYMBOLS) - 1);
+
+    auto end_time = std::chrono::steady_clock::now() + std::chrono::seconds(dur_secs);
+    size_t amount(0);
+
+    while (std::chrono::steady_clock::now() < end_time)
+    {
+        os << CLEAR;
+
+        size_t field(width * spawn_prob);
+        while (field != 0 && amount < max_amount)
+        {
+            size_t col = col_dist(gen);
+            if (prob_dist(gen) < spawn_prob)
+            {
+                if (mrx[0][col].first == ' ')
+                {
+                    mrx[0][col].first = SNOW_SYMBOLS[symbol_dist(gen)];
+                    mrx[0][col].second = get_random_color().second;
+                    ++amount;
+                }
+            }
+            --field;
+        }
+
+        for (int y(height - 1); y >= 0; --y)
+        {
+            for (size_t x(0); x < width; ++x)
+            {
+                if (mrx[y][x].first != ' ')
+                {
+                    if (y + 1 < height && mrx[y + 1][x].first == ' ')
+                    {
+                        mrx[y + 1][x] = mrx[y][x];
+                        mrx[y][x] = {' ', ""};
+                    }
+                    else if (y + 1 >= height)
+                        mrx[y][x] = {' ', ""};
+                }
+            }
+        }
+
+        for (size_t y(0); y < height; ++y)
+        {
+            for (size_t x(0); x < width; ++x)
+            {
+                if (mrx[y][x].first != ' ')
+                    os << mrx[y][x].second << mrx[y][x].first << COLORS[0].second;
+                else
+                    os << ' ';
+            }
+            os << std::endl;
+        }
+
+        os << std::endl;
+        for (size_t i(0); i < width + 2; ++i)
+            os << '-';
+
+        os.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    for (size_t i(0); i < height; ++i)
+        delete[] mrx[i];
+    delete[] mrx;
+
+    os << CLEAR;
 }
