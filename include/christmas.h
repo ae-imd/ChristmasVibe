@@ -10,8 +10,10 @@
 
 namespace IMD
 {
+    using color = std::pair<const char *, const char *>;    // name, code
+    using lyric = std::tuple<const char *, size_t, size_t>; // line, delay between chars, general delay
 
-    constexpr std::pair<const char *, const char *> COLORS[] = {
+    constexpr color COLORS[] = {
         {"RESET", "\033[0m"},
         {"RED", "\033[31m"},
         {"GREEN", "\033[32m"},
@@ -27,20 +29,22 @@ namespace IMD
         {"BRIGHT_MAGENTA", "\033[95m"},
         {"BRIGHT_CYAN", "\033[96m"}};
 
-    std::pair<const char *, const char *> get_random_color();
+    color get_random_color();
 
     const char *christmas_tree(size_t height);
     void struct_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os = std::cout);
     void matrix_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os = std::cout);
 
-    void print_color_tree(const char *tree, std::ostream &os = std::cout);
-    void println_color_tree(const char *tree, std::ostream &os = std::cout);
+    void clrprint(const char *tree, std::ostream &os = std::cout);
+    void clrprintln(const char *tree, std::ostream &os = std::cout);
 
     void delprint(const char *line, size_t delay_ms, std::ostream &os = std::cout);
     void delprintln(const char *line, size_t delay_ms, std::ostream &os = std::cout);
 
-    void enable_color();
+    void setup_terminal();
     void clear_terminal();
+
+    const char *heart(size_t size);
 }
 
 #endif

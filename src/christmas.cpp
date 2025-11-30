@@ -3,7 +3,9 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <cmath>
 #include <chrono>
+
 #include <algorithm>
 
 #ifdef _WIN32
@@ -46,7 +48,7 @@ std::pair<const char *, const char *> IMD::get_random_color()
     return COLORS[dist(gen)];
 }
 
-void IMD::print_color_tree(const char *tree, std::ostream &os)
+void IMD::clrprint(const char *tree, std::ostream &os)
 {
     if (tree == nullptr || tree[0] == '\0')
         return;
@@ -59,13 +61,13 @@ void IMD::print_color_tree(const char *tree, std::ostream &os)
             os << tree[i];
     }
 }
-void IMD::println_color_tree(const char *tree, std::ostream &os)
+void IMD::clrprintln(const char *tree, std::ostream &os)
 {
-    print_color_tree(tree, os);
+    clrprint(tree, os);
     os << std::endl;
 }
 
-void IMD::enable_color()
+void IMD::setup_terminal()
 {
 #ifdef _WIN32
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -264,4 +266,46 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
     delete[] mrx;
 
     os << CLEAR;
+}
+
+const char *IMD::heart(size_t size)
+{
+    if (size <= 1)
+        return NULL;
+
+    std::stringstream ss;
+    double tmp = static_cast<double>(size);
+
+    for (double x(0); x < tmp; ++x)
+    {
+        for (double y(0); y <= 4 * tmp; ++y)
+        {
+            double dist1 = sqrt(pow(x - tmp, 2) + pow(y - tmp, 2));
+            double dist2 = sqrt(pow(x - tmp, 2) + pow(y - 3 * tmp, 2));
+
+            if (dist1 < tmp + 0.5 || dist2 < tmp + 0.5)
+                ss << "*";
+            else
+                ss << " ";
+        }
+        ss << std::endl;
+    }
+
+    // Нижняя часть сердца (треугольник)
+    for (double x(1); x < 2 * tmp; ++x)
+    {
+        for (double y(0); y < x; ++y)
+            ss << " ";
+
+        for (double y(0); y < 4 * tmp + 1 - 2 * x; ++y)
+            ss << "*";
+
+        ss << std::endl;
+    }
+
+    std::string result_str = ss.str();
+    char *result = new char[result_str.length() + 1];
+    strcpy(result, result_str.c_str());
+
+    return result;
 }
