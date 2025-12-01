@@ -127,7 +127,7 @@ void IMD::clrprintln(const char *tree, char symbol, std::ostream &os)
     os << std::endl;
 }
 
-void IMD::setup_terminal()
+void IMD::enable_color()
 {
 #ifdef _WIN32
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -143,6 +143,11 @@ void IMD::setup_terminal()
 #endif
 }
 
+void IMD::move_cursor_home()
+{
+    std::cout << "\033[H" << std::flush;
+}
+
 void IMD::clear_terminal()
 {
 #ifdef _WIN32
@@ -152,7 +157,7 @@ void IMD::clear_terminal()
 #endif
 }
 
-void IMD::delprint(const char *line, size_t delay_ms, std::ostream &os)
+void IMD::dlprint(const char *line, size_t delay_ms, std::ostream &os)
 {
     if (line == NULL || line[0] == '\0')
         return;
@@ -164,14 +169,21 @@ void IMD::delprint(const char *line, size_t delay_ms, std::ostream &os)
         std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     }
 }
-void IMD::delprintln(const char *line, size_t delay_ms, std::ostream &os)
+void IMD::dlprintln(const char *line, size_t delay_ms, std::ostream &os)
 {
-    delprint(line, delay_ms, os);
+    dlprint(line, delay_ms, os);
     os << std::endl;
 }
 
-void IMD::struct_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os)
+void IMD::struct_snow_animation(size_t width, size_t height, size_t fps, double spawn_prob, size_t dur_secs, size_t max_amount)
 {
+    if (width == 0)
+        throw std::invalid_argument("The argument 'width' must not be equal to zero");
+    if (height == 0)
+        throw std::invalid_argument("The argument 'height' must not be equal to zero");
+    if (spawn_prob < 1e-12 || std::abs(spawn_prob - 1.0) < 1e-12)
+        throw std::invalid_argument("The argument 'spawn_prob' must not take a value between 0 and 1");
+
     constexpr char SNOW_SYMBOLS[] = {'.', '*', '+'};
     struct snowflake
     {
@@ -185,12 +197,14 @@ void IMD::struct_snow_animation(size_t width, size_t height, double spawn_prob, 
     std::uniform_int_distribution<> symbol_dist(0, std::size(SNOW_SYMBOLS) - 1);
 
     std::vector<snowflake> space;
+    space.reserve(max_amount);
+    size_t delay_ms(1000 / fps);
 
     auto end_time = std::chrono::steady_clock::now() + std::chrono::seconds(dur_secs);
 
     while (std::chrono::steady_clock::now() < end_time)
     {
-        os << "\033[H";
+        std::cout << "\033[H"; // don't use move_cursor_home()
 
         size_t field(width * spawn_prob);
         while (field != 0 && space.size() < max_amount)
@@ -223,32 +237,39 @@ void IMD::struct_snow_animation(size_t width, size_t height, double spawn_prob, 
 
         for (auto it = space.begin(); it != space.end();)
         {
-            os << "\033[" << it->y << ";" << it->x << "H";
-            os << " ";
+            std::cout << "\033[" << it->y << ";" << it->x << "H";
+            std::cout << " ";
 
             it->y += 1;
             if (it->y > height)
                 it = space.erase(it);
             else
             {
-                os << "\033[" << it->y << ";" << it->x << "H";
-                os << it->color << it->symbol << COLORS[0].second;
+                std::cout << "\033[" << it->y << ";" << it->x << "H";
+                std::cout << it->color << it->symbol << COLORS[0].second;
                 ++it;
             }
         }
-        os << "\033[" << height + 1 << ";1H";
+        std::cout << "\033[" << height + 1 << ";1H";
         for (size_t i(0); i < width; ++i)
-            os << "-";
+            std::cout << "-";
 
-        os.flush();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     }
+    std::cout << "\033[" << height + 2 << ";1H";
 }
-void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, size_t dur_secs, size_t max_amount, std::ostream &os)
+void IMD::matrix_snow_animation(size_t width, size_t height, size_t fps, double spawn_prob, size_t dur_secs, size_t max_amount)
 {
-    constexpr char SNOW_SYMBOLS[] = {'.', '*', '+'};
+    if (width == 0)
+        throw std::invalid_argument("The argument 'width' must not be equal to zero");
+    if (height == 0)
+        throw std::invalid_argument("The argument 'height' must not be equal to zero");
+    if (spawn_prob < 1e-12 || std::abs(spawn_prob - 1.0) < 1e-12)
+        throw std::invalid_argument("The argument 'spawn_prob' must not take a value between 0 and 1");
     using cell = std::pair<char, const char *>;
 
+    constexpr char SNOW_SYMBOLS[] = {'.', '*', '+'};
     cell **mrx = new cell *[height];
     for (size_t i(0); i < height; ++i)
     {
@@ -263,10 +284,13 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
 
     auto end_time = std::chrono::steady_clock::now() + std::chrono::seconds(dur_secs);
     size_t amount(0);
+    size_t delay_ms(1000 / fps);
+
+    clear_terminal();
 
     while (std::chrono::steady_clock::now() < end_time)
     {
-        os << "\033[H";
+        std::cout << "\033[H"; // don't use move_cursor_home()
 
         size_t field(width * spawn_prob);
         while (field != 0 && amount < max_amount)
@@ -284,7 +308,7 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
             --field;
         }
 
-        for (int y(height - 1); y >= 0; --y)
+        for (size_t y(height); y-- > 0;)
         {
             for (size_t x(0); x < width; ++x)
             {
@@ -309,24 +333,32 @@ void IMD::matrix_snow_animation(size_t width, size_t height, double spawn_prob, 
             for (size_t x(0); x < width; ++x)
             {
                 if (mrx[y][x].first != ' ')
-                    os << mrx[y][x].second << mrx[y][x].first << COLORS[0].second;
+                    std::cout << mrx[y][x].second << mrx[y][x].first << COLORS[0].second;
                 else
-                    os << ' ';
+                    std::cout << ' ';
             }
-            os << std::endl;
+            std::cout << std::endl;
         }
 
-        os << std::endl;
+        std::cout << std::endl;
         for (size_t i(0); i < width + 2; ++i)
-            os << '-';
+            std::cout << '-';
 
-        os.flush();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     }
 
     for (size_t i(0); i < height; ++i)
         delete[] mrx[i];
     delete[] mrx;
 
-    os << "\033[H";
+    std::cout << "\033[" << height + 2 << ";1H" << std::flush;
+}
+
+void IMD::set_cursor_visibility(bool is_visible)
+{
+    if (is_visible)
+        std::cout << "\033[?25h" << std::flush;
+    else
+        std::cout << "\033[?25l" << std::flush;
 }
