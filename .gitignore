@@ -39,3 +39,19 @@
 
 # debug information files
 *.dwo
+
+# Build outputs
+build/
+Debug/
+Release/
+x64/
+x86/
+
+# VS Code
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
